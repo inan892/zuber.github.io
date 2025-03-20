@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XOX Oyunu (Yapay Zeka ile)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
+        body { background: #121212; color: white; text-align: center; padding: 20px; }
+        h1 { font-size: 2em; margin-bottom: 10px; }
+        .board { display: grid; grid-template-columns: repeat(3, 100px); gap: 10px; justify-content: center; margin: 20px auto; }
+        .cell { width: 100px; height: 100px; font-size: 36px; text-align: center; line-height: 100px; border-radius: 10px; 
+                border: 2px solid #888; background: #1e1e1e; cursor: pointer; transition: 0.3s; }
+        .cell:hover { background: #333; }
+        .won { background: #4CAF50 !important; color: white !important; }
+        #codeInput { margin-top: 20px; display: none; }
+        input, button { padding: 10px; font-size: 16px; margin-top: 10px; border: none; border-radius: 5px; }
+        input { width: 150px; text-align: center; }
+        button { background: #4CAF50; color: white; cursor: pointer; }
+        button:hover { background: #388E3C; }
+    </style>
+</head>
+<body>
+
+    <h1>XOX Oyunu (Yapay Zeka ile)</h1>
+    <p>Sen **X** oynuyorsun, yapay zeka **O** oynuyor.</p>
+    
+    <div class="board">
+        <div class="cell" onclick="makeMove(0)"></div>
+        <div class="cell" onclick="makeMove(1)"></div>
+        <div class="cell" onclick="makeMove(2)"></div>
+        <div class="cell" onclick="makeMove(3)"></div>
+        <div class="cell" onclick="makeMove(4)"></div>
+        <div class="cell" onclick="makeMove(5)"></div>
+        <div class="cell" onclick="makeMove(6)"></div>
+        <div class="cell" onclick="makeMove(7)"></div>
+        <div class="cell" onclick="makeMove(8)"></div>
+    </div>
+
+    <div id="codeInput">
+        <p>Oyunu kazandın! Doğrulama kodu: <span id="randomCode"></span></p>
+        <input type="text" id="userCode" placeholder="Kodu girin">
+        <button onclick="checkCode()">Onayla</button>
+    </div>
+
+    <script>
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let gameActive = true;
+        let correctCode = "";
+
+        function makeMove(index) {
+            if (board[index] === "" && gameActive) {
+                board[index] = "X";
+                document.getElementsByClassName("cell")[index].innerText = "X";
+                if (checkWinner("X")) return;
+                setTimeout(aiMove, 500); // Yapay zeka hamlesi
+            }
+        }
+
+        function aiMove() {
+            let bestMove = minimax(board, "O").index;
+            if (bestMove !== undefined) {
+                board[bestMove] = "O";
+                document.getElementsByClassName("cell")[bestMove].innerText = "O";
+                checkWinner("O");
+            }
+        }
+
+        function checkWinner(player) {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], 
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], 
+                [0, 4, 8], [2, 4, 6]
+            ];
+
+            for (let pattern of winPatterns) {
+                const [a, b, c] = pattern;
+                if (board[a] === player && board[b] === player && board[c] === player) {
+                    document.getElementsByClassName("cell")[a].classList.add("won");
+                    document.getElementsByClassName("cell")[b].classList.add("won");
+                    document.getElementsByClassName("cell")[c].classList.add("won");
+                    gameActive = false;
+                    if (player === "X") {
+                        correctCode = Math.floor(1000 + Math.random() * 9000); // 4 haneli rastgele kod
+                        document.getElementById("randomCode").innerText = correctCode;
+                        document.getElementById("codeInput").style.display = "block";
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function minimax(newBoard, player) {
+            let emptyCells = newBoard.map((val, index) => val === "" ? index : null).filter(val => val !== null);
+
+            if (checkWin(newBoard, "X")) return { score: -10 };
+            if (checkWin(newBoard, "O")) return { score: 10 };
+            if (emptyCells.length === 0) return { score: 0 };
+
+            let moves = [];
+            for (let i of emptyCells) {
+                let move = {};
+                move.index = i;
+                newBoard[i] = player;
+
+                if (player === "O") {
+                    let result = minimax(newBoard, "X");
+                    move.score = result.score;
+                } else {
+                    let result = minimax(newBoard, "O");
+                    move.score = result.score;
+                }
+
+                newBoard[i] = "";
+                moves.push(move);
+            }
+
+            let bestMove;
+            if (player === "O") {
+                let maxScore = -Infinity;
+                for (let move of moves) {
+                    if (move.score > maxScore) {
+                        maxScore = move.score;
+                        bestMove = move;
+                    }
+                }
+            } else {
+                let minScore = Infinity;
+                for (let move of moves) {
+                    if (move.score < minScore) {
+                        minScore = move.score;
+                        bestMove = move;
+                    }
+                }
+            }
+
+            return bestMove;
+        }
+
+        function checkWin(tempBoard, player) {
+            return [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]
+                .some(pattern => pattern.every(index => tempBoard[index] === player));
+        }
+
+        function checkCode() {
+            let userCode = document.getElementById("userCode").value;
+            if (userCode == correctCode) {
+                window.location.href = "sayfa-3.html";
+            } else {
+                alert("Yanlış kod! Tekrar deneyin.");
+            }
+        }
+    </script>
+
+</body>
+</html>
